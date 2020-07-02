@@ -67,6 +67,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		double bgAvg;
 		double avg;
 		double lowerThreshold;
+		boolean redFlag;
 		
 		NeuronInfo() {}
 		
@@ -82,6 +83,8 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 	
 	protected ImagePlus image;
 	boolean paused = true;
+	boolean redFlag = false;
+	boolean redFlagDelay = false;
 	boolean lostTrack = false;
 	int currentSlice = 0;
 	int currentAnimal = 0;
@@ -176,6 +179,8 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		NeuronInfo ni = this.initialPositions.get(animal);
 		positions[1] = ni;
 		IJ.setThreshold(ni.lowerThreshold, 65535);
+		this.redFlag = false;
+		this.redFlagDelay = false;
 	}
 	
 	public void saveFinalPositions() {
@@ -272,12 +277,12 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		//if (IJ.getVersion() >= "1.37r") 
 		
 			//IJ.setOption("DisablePopupMenu", true);)
-		//String settingsPath = IJ.getFilePath("Choose Settings File Location");
+		String settingsPath = IJ.getFilePath("Choose Settings File Location");
 		List<String> settingsInfo = null;
 		try {
 			//TrckSett_awa_2p5x_4pxSq
-			settingsInfo = this.readSettings("C:\\Users\\nickc\\OneDrive\\NT\\settings\\tracksettings.txt");
-			//settingsInfo = this.readSettings(settingsPath);
+			//settingsInfo = this.readSettings("C:\\Users\\nickc\\OneDrive\\NT\\settings\\tracksettings.txt");
+			settingsInfo = this.readSettings(settingsPath);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -337,7 +342,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 				}
 	    		currentImage = ntInstance.currentImageIndex;
 		    	for(int imgIndex = currentImageIndex; imgIndex < ntInstance.fileList.length; imgIndex++) {
-			    	ntInstance.setImage(imgIndex);
+		    		ntInstance.setImage(imgIndex);
 		    		if(ntInstance.paused) {
 						//ntInstance.currentAnimal = a;
 						return;
@@ -353,6 +358,10 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 			    		//System.out.println("animal: " + a);
 				    	currentSlice = ntInstance.image.getCurrentSlice();
 				    	for(int i = Math.max(1,  currentSlice); i <= ntInstance.numImages; i++) {
+				    		if(ntInstance.redFlagDelay) {
+				    			IJ.wait(450);
+				    			ntInstance.redFlagDelay = false;
+				    		}
 				    		if(i == 1) {
 				    			ntInstance.resetPositions(a);
 				    		}
@@ -592,6 +601,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		neuronInfo.y = y;
 		neuronInfo.sqArea = sqArea;
 		neuronInfo.sqIntDens = sqIntDens;
+		neuronInfo.redFlag = this.redFlag;
 		if(resultsTable.size() == 1) {
 			neuronInfo.bgAvg = resultsTable.getValue("Mean", 0);
 			neuronInfo.bgMedian = resultsTable.getValue("Median", 0);
@@ -668,7 +678,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 				+ formatter.format(ni.intSub) + "," + formatter.format(ni.bgMedian) + "," + formatter.format(ni.maxInt)
 						+ "," + formatter.format(ni.area) + "," + formatter.format(ni.x) + "," + formatter.format(ni.y) + "," 
 				+ formatter.format(ni.sqIntDens) + "," + formatter.format(ni.sqIntSub) + "," + formatter.format(ni.sqArea) + ","
-						+ formatter2.format(ni.lowerThreshold) + "," + animal + "," + "0" + "," + "1";
+						+ formatter2.format(ni.lowerThreshold) + "," + animal + "," + (ni.redFlag ? 1 : 0) + "," + "1";
 				fw.write(line);
 				fw.write("\n");
 			}
@@ -966,6 +976,10 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		}
 		else if(e.getKeyCode() == KeyEvent.VK_V) {
 			this.saveInitialPositions();
+		}
+		else if(e.getKeyCode() == KeyEvent.VK_Q) {
+			this.redFlag = !this.redFlag;
+			this.redFlagDelay = true;
 		}
 	}
 
