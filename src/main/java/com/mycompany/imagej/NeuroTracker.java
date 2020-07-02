@@ -219,6 +219,8 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		this.currentSlice = 1;
 		this.paused = true;
 		this.doneSelecting = false;
+		this.redFlag = false;
+		this.redFlagDelay = false;
 		
 		this.image.setSlice(1);
 		
@@ -277,12 +279,12 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		//if (IJ.getVersion() >= "1.37r") 
 		
 			//IJ.setOption("DisablePopupMenu", true);)
-		String settingsPath = IJ.getFilePath("Choose Settings File Location");
+		//String settingsPath = IJ.getFilePath("Choose Settings File Location");
 		List<String> settingsInfo = null;
 		try {
 			//TrckSett_awa_2p5x_4pxSq
-			//settingsInfo = this.readSettings("C:\\Users\\nickc\\OneDrive\\NT\\settings\\tracksettings.txt");
-			settingsInfo = this.readSettings(settingsPath);
+			settingsInfo = this.readSettings("C:\\Users\\nickc\\OneDrive\\NT\\settings\\tracksettings.txt");
+			//settingsInfo = this.readSettings(settingsPath);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
