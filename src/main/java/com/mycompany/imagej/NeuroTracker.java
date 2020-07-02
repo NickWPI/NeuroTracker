@@ -256,6 +256,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 				this.paused = false;
 				this.saveInitialPositions();
 				this.doneSelecting = true;
+				IJ.selectWindow("Log");
 				IJ.run("Close");
 			}
 		}
