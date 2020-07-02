@@ -178,6 +178,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		positions = new NeuronInfo[size + 1];
 		NeuronInfo ni = this.initialPositions.get(animal);
 		positions[1] = ni;
+		System.out.println(ni.lowerThreshold);
 		IJ.setThreshold(ni.lowerThreshold, 65535);
 		this.redFlag = false;
 		this.redFlagDelay = false;
