@@ -1,8 +1,18 @@
 package com.mycompany.imagej;
 
+import java.awt.Button;
+import java.awt.Checkbox;
 import java.awt.Color;
+import java.awt.FileDialog;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.Insets;
+import java.awt.Panel;
 import java.awt.Point;
+import java.awt.Scrollbar;
 import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -134,6 +144,101 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
         } finally {
             reader.close();
         }
+    }
+    
+    @SuppressWarnings("unchecked")
+    public void showSettingsDialog() {
+    	GenericDialog dialog = new GenericDialog("Settings");
+    	dialog.addSlider("Threshold", 0, 65535, 1200);
+    	dialog.addStringField("Search Diameter", "8");
+    	dialog.addStringField("BG Ring Diameter", "16");
+    	dialog.addStringField("SQ Size", "6");
+    	dialog.addStringField("Max Size", "80");
+    	dialog.addStringField("Min Size", "2");
+    	dialog.addStringField("Expand Allow", "10");
+    	dialog.addCheckbox("Use Tracking", true);
+    	dialog.addCheckbox("Velocity Predict", false);
+    	FileDialog fileDialog = new FileDialog(dialog, "Select file");
+    	fileDialog.setFile("*.txt");
+    	Button browseButton = new Button("Browse");
+    	browseButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+	            fileDialog.setVisible(true);
+	            System.out.println("File Selected :" 
+	            + fileDialog.getDirectory() + fileDialog.getFile());
+	            if(fileDialog.getFile() != null) {
+	            	try {
+						List<String> settings = NeuroTracker.this.readSettings(fileDialog.getDirectory() + fileDialog.getFile());
+				    	Vector<Scrollbar> sliders = dialog.getSliders();
+				    	Vector<TextField> fields = dialog.getStringFields();
+				    	Vector<Checkbox> checkBoxes = dialog.getCheckboxes();
+				    	Scrollbar thresholdSlider = sliders.get(0);
+				    	TextField searchDiaTextField = fields.get(0);
+				    	TextField bgRingDiaTextField = fields.get(1);
+				    	TextField sqSizeTextField = fields.get(2);
+				    	TextField maxSizeTextField = fields.get(3);
+				    	TextField minSizeTextField = fields.get(4);
+				    	TextField expandAllowTextField = fields.get(5);
+				    	Checkbox useTrackingCheckBox = checkBoxes.get(0);
+				    	Checkbox velocityPredictCheckBox = checkBoxes.get(1);
+				    	//set the values in the ui
+				    	//System.out.println(dialog.getComponentCount());
+				    	//pain in the butt to figure out
+				    	Panel sbPanel = (Panel)dialog.getComponent(1);
+				    	TextField scrollBarText = (TextField)sbPanel.getComponent(1);
+				    	int value = Integer.parseInt(settings.get(1));
+				    	scrollBarText.setText(settings.get(1));
+				    	thresholdSlider.setValue(value);
+		    	
+				    	searchDiaTextField.setText(settings.get(2));
+				    	bgRingDiaTextField.setText(settings.get(3));
+				    	sqSizeTextField.setText(settings.get(4));
+				    	maxSizeTextField.setText(settings.get(5));
+				    	minSizeTextField.setText(settings.get(6));
+				    	expandAllowTextField.setText(settings.get(7));
+				    	useTrackingCheckBox.setState(Integer.parseInt(settings.get(8)) == 1 ? true : false);
+				    	velocityPredictCheckBox.setState(Integer.parseInt(settings.get(9)) == 1 ? true : false);
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+	            }
+			}
+        });
+    	Panel buttons = new Panel();
+		buttons.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
+		GridBagConstraints pc  = new GridBagConstraints();
+		pc.gridx = 1;
+		pc.gridy = 9;
+		pc.anchor = GridBagConstraints.WEST;
+		pc.gridwidth = 2;
+		pc.insets = new Insets(15, 0, 0, 0);
+		buttons.add(browseButton);
+    	dialog.add(buttons, pc);
+    	//dialog.pack();
+    	dialog.showDialog();
+    	Vector<Scrollbar> sliders = dialog.getSliders();
+    	Vector<TextField> fields = dialog.getStringFields();
+    	Vector<Checkbox> checkBoxes = dialog.getCheckboxes();
+    	int lowerThreshold = sliders.get(0).getValue();
+    	int searchDia = Integer.parseInt(fields.get(0).getText().toString());
+    	int bgRingDia = Integer.parseInt(fields.get(1).getText().toString());
+    	int sqSize = Integer.parseInt(fields.get(2).getText().toString());
+    	int maxSize = Integer.parseInt(fields.get(3).getText().toString());
+    	int minSize = Integer.parseInt(fields.get(4).getText().toString());
+    	int expandAllow = Integer.parseInt(fields.get(5).getText().toString());
+    	boolean useTracking = checkBoxes.get(0).getState();
+    	boolean velocityPredict = checkBoxes.get(1).getState();
+		this.settings.put("animal", 0);
+		this.settings.put("lowerThreshold", lowerThreshold);
+		this.settings.put("upperThreshold", 65535);
+		this.settings.put("searchDia", searchDia);
+		this.settings.put("bgRingDia", bgRingDia);
+		this.settings.put("sqSize", sqSize);
+		this.settings.put("maxSize", maxSize);
+		this.settings.put("minSize", minSize);
+		this.settings.put("expandAllow", expandAllow);
+		this.settings.put("usetracking", useTracking ? 1 : 0);
+		this.settings.put("velocityPredict", velocityPredict ? 1 : 0);
     }
 	
 	public void loadFolder() {
@@ -293,7 +398,10 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		this.settings.put("animal", Integer.parseInt(settingsInfo.get(0)));
+		
+		this.showSettingsDialog();
+		
+		/*this.settings.put("animal", Integer.parseInt(settingsInfo.get(0)));
 		this.settings.put("lowerThreshold", Integer.parseInt(settingsInfo.get(1)));
 		this.settings.put("upperThreshold", 65535);
 		this.settings.put("searchDia", Integer.parseInt(settingsInfo.get(2)));
@@ -303,7 +411,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		this.settings.put("minSize", Integer.parseInt(settingsInfo.get(6)));
 		this.settings.put("expandAllow", Integer.parseInt(settingsInfo.get(7)));
 		this.settings.put("usetracking", Integer.parseInt(settingsInfo.get(8)));
-		this.settings.put("velocityPredict", Integer.parseInt(settingsInfo.get(9)));
+		this.settings.put("velocityPredict", Integer.parseInt(settingsInfo.get(9)));*/
 		System.out.println(this.settings);
 		
 		// get width and height
