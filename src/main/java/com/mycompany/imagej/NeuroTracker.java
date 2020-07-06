@@ -149,13 +149,14 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
     @SuppressWarnings("unchecked")
     public void showSettingsDialog() {
     	GenericDialog dialog = new GenericDialog("Settings");
-    	dialog.addSlider("Threshold", 0, 65535, 1200);
+    	//dialog.addSlider("Threshold", 0, 65535, 1200);
     	dialog.addStringField("Search Diameter", "8");
     	dialog.addStringField("BG Ring Diameter", "16");
     	dialog.addStringField("SQ Size", "6");
     	dialog.addStringField("Max Size", "80");
     	dialog.addStringField("Min Size", "2");
     	dialog.addStringField("Expand Allow", "10");
+    	dialog.addStringField("Threshold", "1200");
     	dialog.addCheckbox("Use Tracking", true);
     	dialog.addCheckbox("Velocity Predict", false);
     	FileDialog fileDialog = new FileDialog(dialog, "Select file");
@@ -169,10 +170,10 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 	            if(fileDialog.getFile() != null) {
 	            	try {
 						List<String> settings = NeuroTracker.this.readSettings(fileDialog.getDirectory() + fileDialog.getFile());
-				    	Vector<Scrollbar> sliders = dialog.getSliders();
+				    	//Vector<Scrollbar> sliders = dialog.getSliders();
 				    	Vector<TextField> fields = dialog.getStringFields();
 				    	Vector<Checkbox> checkBoxes = dialog.getCheckboxes();
-				    	Scrollbar thresholdSlider = sliders.get(0);
+				    	//Scrollbar thresholdSlider = sliders.get(0);
 				    	TextField searchDiaTextField = fields.get(0);
 				    	TextField bgRingDiaTextField = fields.get(1);
 				    	TextField sqSizeTextField = fields.get(2);
@@ -184,11 +185,13 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 				    	//set the values in the ui
 				    	//System.out.println(dialog.getComponentCount());
 				    	//pain in the butt to figure out
-				    	Panel sbPanel = (Panel)dialog.getComponent(1);
+				    	/*Panel sbPanel = (Panel)dialog.getComponent(1);
 				    	TextField scrollBarText = (TextField)sbPanel.getComponent(1);
 				    	int value = Integer.parseInt(settings.get(1));
 				    	scrollBarText.setText(settings.get(1));
-				    	thresholdSlider.setValue(value);
+				    	thresholdSlider.setValue(value);*/
+				    	TextField thresholdTextField = fields.get(6);
+				    	thresholdTextField.setText(settings.get(1));
 		    	
 				    	searchDiaTextField.setText(settings.get(2));
 				    	bgRingDiaTextField.setText(settings.get(3));
@@ -207,7 +210,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
     	Panel buttons = new Panel();
 		buttons.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
 		GridBagConstraints pc  = new GridBagConstraints();
-		pc.gridx = 1;
+		pc.gridx = 0; //1
 		pc.gridy = 9;
 		pc.anchor = GridBagConstraints.WEST;
 		pc.gridwidth = 2;
@@ -216,10 +219,11 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
     	dialog.add(buttons, pc);
     	//dialog.pack();
     	dialog.showDialog();
-    	Vector<Scrollbar> sliders = dialog.getSliders();
+    	//Vector<Scrollbar> sliders = dialog.getSliders();
     	Vector<TextField> fields = dialog.getStringFields();
     	Vector<Checkbox> checkBoxes = dialog.getCheckboxes();
-    	int lowerThreshold = sliders.get(0).getValue();
+    	//int lowerThreshold = sliders.get(0).getValue();
+    	int lowerThreshold = Integer.parseInt(fields.get(6).getText().toString());
     	int searchDia = Integer.parseInt(fields.get(0).getText().toString());
     	int bgRingDia = Integer.parseInt(fields.get(1).getText().toString());
     	int sqSize = Integer.parseInt(fields.get(2).getText().toString());
