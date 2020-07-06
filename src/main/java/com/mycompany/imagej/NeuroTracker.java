@@ -390,14 +390,14 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 			//IJ.setOption("DisablePopupMenu", true);)
 		//String settingsPath = IJ.getFilePath("Choose Settings File Location");
 		List<String> settingsInfo = null;
-		try {
+		/*try {
 			//TrckSett_awa_2p5x_4pxSq
 			settingsInfo = this.readSettings("C:\\Users\\nickc\\OneDrive\\NT\\settings\\tracksettings.txt");
 			//settingsInfo = this.readSettings(settingsPath);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 		
 		this.showSettingsDialog();
 		
