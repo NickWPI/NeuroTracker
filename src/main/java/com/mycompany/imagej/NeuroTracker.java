@@ -137,6 +137,9 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 	            	String setting = s[0].replaceAll(" ", "");
 	            	settings.add(setting);
             	}
+            	else {
+            		return null;
+            	}
             }
 
             //return stringBuilder.toString();
@@ -160,10 +163,11 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
     	dialog.addCheckbox("Use Tracking", true);
     	dialog.addCheckbox("Velocity Predict", false);
     	FileDialog fileDialog = new FileDialog(dialog, "Select file");
-    	fileDialog.setFile("*.txt");
+    	//fileDialog.setFile("*.txt");
     	Button browseButton = new Button("Browse");
     	browseButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				fileDialog.setFile("*.txt");
 	            fileDialog.setVisible(true);
 	            System.out.println("File Selected :" 
 	            + fileDialog.getDirectory() + fileDialog.getFile());
@@ -209,15 +213,16 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
         });
     	Panel buttons = new Panel();
 		buttons.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
-		GridBagConstraints pc  = new GridBagConstraints();
+		GridBagConstraints pc = new GridBagConstraints();
 		pc.gridx = 0; //1
 		pc.gridy = 9;
-		pc.anchor = GridBagConstraints.WEST;
+		pc.anchor = GridBagConstraints.CENTER; //west
 		pc.gridwidth = 2;
 		pc.insets = new Insets(15, 0, 0, 0);
 		buttons.add(browseButton);
     	dialog.add(buttons, pc);
     	//dialog.pack();
+    	dialog.hideCancelButton();
     	dialog.showDialog();
     	//Vector<Scrollbar> sliders = dialog.getSliders();
     	Vector<TextField> fields = dialog.getStringFields();
@@ -533,6 +538,8 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 					    	ntInstance.currentSlice = 1;
 					    	ntInstance.image.setSlice(1);
 					    	ntInstance.saveFinalPositions();
+					    	ntInstance.image.getOverlay().clear();
+					    	//IJ.run(ntInstance.image, "Select None", "");
 			    			//delete animal coordinates from map
 			    		}
 			    	} //end animal
@@ -727,6 +734,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 			neuronInfo.sqIntSub = sqIntDens - (sqArea * neuronInfo.bgMedian);
 		}
 		neuronInfo.bgMedian2 = neuronInfo.bgMedian;
+		//IJ.run("Select None");
 		return neuronInfo;
 	}
 	
