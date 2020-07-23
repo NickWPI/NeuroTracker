@@ -58,6 +58,11 @@ import ij.plugin.filter.ParticleAnalyzer;
 import ij.plugin.filter.PlugInFilter;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
+import sc.fiji.analyzeSkeleton.AnalyzeSkeleton_;
+import sc.fiji.analyzeSkeleton.Edge;
+import sc.fiji.analyzeSkeleton.Graph;
+import sc.fiji.analyzeSkeleton.SkeletonResult;
+
 
 public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 	class NeuronInfo {
@@ -92,6 +97,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 	}
 	
 	protected ImagePlus image;
+	ImagePlus processedImage;
 	boolean paused = true;
 	boolean redFlag = false;
 	boolean redFlagDelay = false;
@@ -310,6 +316,10 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		this.image = image;
 		this.image.show();
 		
+		this.processedImage = preprocess(this.image);
+		//ImageProcessor newProc = this.processedImage.getProcessor().resize(500, 500);
+		//this.processedImage.setProcessor(newProc);
+		
 		IJ.selectWindow(this.image.getTitle());
 
 		//WindowManager.repaintImageWindows();
@@ -524,7 +534,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 							double minSize = ntInstance.settings.get("minSize");
 							double expandAllow = ntInstance.settings.get("expandAllow");
 							int velocityPredict = ntInstance.settings.get("velocityPredict");
-							NeuronInfo next = ntInstance.analyze(xc, yc, searchDia, bgRingDia, minSize, maxSize, 0.5, lowerThreshold, 
+							NeuronInfo next = ntInstance.analyzeWithBackup(xc, yc, searchDia, bgRingDia, minSize, maxSize, 0.5, lowerThreshold, 
 									upperThreshold, sqsize, expandAllow, velocityPredict == 1 ? true : false);
 							if(next != null) {
 								positions[i] = next;
@@ -555,9 +565,289 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		}).start();
 	}
 	
+	public ImagePlus preprocess(ImagePlus image) {
+		ImagePlus dup = image.duplicateAll();
+		IJ.run(dup, "Set Scale...", "distance=0");
+		IJ.run(dup, "Subtract Background...", "rolling=100 stack");
+		//IJ.setAutoThreshold(dup, "Triangle dark");
+		IJ.setThreshold(dup, 100, 65535);
+		IJ.run(dup, "Convert to Mask", "method=Default background=Default black" );
+		IJ.run(dup, "Dilate", "stack");
+		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
+		IJ.run(dup, "Dilate","stack");
+		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
+		IJ.run(dup, "Dilate","stack");
+		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
+		IJ.run(dup, "Dilate","stack");
+		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
+		IJ.run(dup, "Dilate","stack");
+		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
+		IJ.run(dup, "Dilate","stack");
+		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
+		IJ.run(dup, "Skeletonize", "stack");
+		return dup;
+	}
+	
+	//analyze skeleton and get the closest endpoint
+	public double[] analyzeSkeleton(ImagePlus image, double[] prevPoint) {
+		AnalyzeSkeleton_ analyzeSkeleton = new AnalyzeSkeleton_();
+		//IJ.newImage("Slice", "8-bit White", 512, 512, 1);
+		this.processedImage.setSlice(this.image.getCurrentSlice());
+		ImagePlus newImage = IJ.createImage("Slice", "8-bit White", 1024, 1024, 1);
+		newImage.setProcessor(this.processedImage.getProcessor()/*.resize(512, 512)*/);
+		newImage.setSlice(this.image.getCurrentSlice());
+		//newImage.show();
+		IJ.run(newImage, "Set Scale...", "distance=0");
+		analyzeSkeleton.setup("", newImage);
+		SkeletonResult result = analyzeSkeleton.run(AnalyzeSkeleton_.NONE, false, false, null, true, false);
+		Graph[] graph = result.getGraph();
+		ArrayList<double[]> possiblePoints = new ArrayList<>();
+		System.out.println("num of trees: " + result.getNumOfTrees());
+		for(int i = 0; i < result.getNumOfTrees(); i++) {
+			ArrayList<Edge> listEdges = graph[i].getEdges();
+			for(Edge e : listEdges) {
+				//if(e.getLength() > 35) {
+				System.out.println("length of edge: " + e.getLength());
+					double x1 = e.getV1().getPoints().get(0).x /** newImage.getCalibration().pixelWidth*/;
+					double y1 = e.getV1().getPoints().get(0).y /** newImage.getCalibration().pixelHeight*/;
+					double x2 = e.getV2().getPoints().get(0).x /** newImage.getCalibration().pixelWidth*/;
+					double y2 = e.getV2().getPoints().get(0).y /** newImage.getCalibration().pixelHeight*/;
+					possiblePoints.add(new double[] {x1, y1});
+					possiblePoints.add(new double[] {x2, y2});
+					System.out.println("possible: " + x1 + ", " + y1);
+					System.out.println("possible: " + x2 + ", " + y2);
+				//}
+			}
+		}
+		double[] closest = new double[2];
+		double minDist = Double.MAX_VALUE;
+		for(double[] p : possiblePoints) {
+			double dist = Math.sqrt(Math.pow(Math.abs(prevPoint[0] - p[0]), 2) + Math.pow(Math.abs(prevPoint[1] - p[1]), 2));
+			if(/*dist < 20 && */dist < minDist) {
+				System.out.println("used");
+				closest = p;
+				minDist = dist;
+			}
+		}
+		if(minDist == Double.MAX_VALUE) {
+			return prevPoint;
+		}
+		//closest[0] *= 2;
+		//closest[1] *= 2;
+		return closest;
+	}
+	
+	public NeuronInfo analyzeWithBackup(double xc, double yc, double searchDia, double bgRingDia, double minSize, double maxSize, 
+			double searchBoxScale, double lowerThreshold, double upperThreshold, double sqsize, double expandAllow, boolean velocityPredict) {
+		IJ.run("Set Scale...", "distance=0");
+		
+		//adjust search here
+		//ImagePlus dup = preprocess(this.image);
+		/*this.processedImage.setSlice(this.image.getCurrentSlice());
+		double[] loc = analyzeSkeleton(this.processedImage, new double[] {xc, yc});
+		System.out.println("found endpoint " + loc[0] + ", " + loc[1]);
+		xc = loc[0];
+		yc = loc[1];*/
+		
+		makeOval(xc - searchDia / 2, yc - searchDia / 2, searchDia, searchDia);
+		//makeOval(xc - searchBoxScale * w, yc - searchBoxScale * h, w, h);
+		//IJ.runMacro("makeOval(" + (xc - searchBoxScale * w) + "," +  (yc - searchBoxScale * h) + "," + w + "," + h + ")");
+		IJ.run(this.image, "Set Measurements...", "area min centroid center integrated slice limit redirect=None decimal=3");
+		ResultsTable rt = new ResultsTable();
+		ParticleAnalyzer pa = new ParticleAnalyzer(ParticleAnalyzer.SHOW_NONE /*+ ParticleAnalyzer.DISPLAY_SUMMARY*/
+				+ ParticleAnalyzer.CLEAR_WORKSHEET + ParticleAnalyzer.SLICE, ParticleAnalyzer.AREA + ParticleAnalyzer.MIN_MAX
+				+ ParticleAnalyzer.CENTROID + ParticleAnalyzer.CENTER_OF_MASS + ParticleAnalyzer.INTEGRATED_DENSITY
+				+ ParticleAnalyzer.SLICE + ParticleAnalyzer.LIMIT, rt, minSize, maxSize, 0d, 1d);
+		//IJ.run(this.image, "Analyze Particles...", "size=" + minSize + "-" + maxSize + "circularity=0.00-1.00 show=Nothing display clear slice");
+		//pa.setHideOutputImage(true);
+		pa.analyze(this.image);
+		//System.out.println(Analyzer.getResultsTable().size());
+		//System.out.println(ResultsTable.getResultsTable().size());
+		
+		//IJ.run(this.image, "Analyze Particles...", "size=" + minSize + "-" + maxSize + " circularity=0.00-1.00 show=Nothing display clear slice");
+		ResultsTable resultsTable = rt;//ResultsTable.getResultsTable();
+		//resultsTable.show("Results");
+		double xm, ym, area, maxInt, intDens, x, y, avg;
+		if(resultsTable.size() == 1) {
+			xm = resultsTable.getValue("XM", 0);
+			ym = resultsTable.getValue("YM", 0);
+            area = resultsTable.getValue("Area", 0);
+            maxInt = resultsTable.getValue("Max", 0);
+            intDens = resultsTable.getValue("IntDen", 0);
+            x = resultsTable.getValue("X", 0);
+            y = resultsTable.getValue("Y", 0);
+            avg = intDens / area;
+		}
+		else if(resultsTable.size() > 1) {
+            double biggestArea = 0;
+            int biggestAreaPos = 0;
+            for (int res = 0; res < resultsTable.size(); res++) {
+                double resArea = resultsTable.getValue("Area", res);
+                if (resArea > biggestArea) {
+                    biggestArea = resArea;
+                    biggestAreaPos = res;
+                }
+            }
+
+            xm = resultsTable.getValue("XM", biggestAreaPos);
+            ym = resultsTable.getValue("YM", biggestAreaPos);
+            area = resultsTable.getValue("Area", biggestAreaPos);
+            maxInt = resultsTable.getValue("Max", biggestAreaPos);
+            intDens = resultsTable.getValue("IntDen", biggestAreaPos);
+            x = resultsTable.getValue("X", biggestAreaPos);
+            y = resultsTable.getValue("Y", biggestAreaPos);
+            avg = intDens / area;
+		}
+		else {
+			int expand = 0;
+			int numResults = 0;
+			//int expandAllow = 0; //set
+			while(numResults < 1 && expand <= expandAllow) {
+				//IJ.makeOval(xc - searchBoxScale * w - expand, yc - searchBoxScale * h - expand, w + 5 * expand, h + 2 * expand);
+				//double radiusX = w + 5 * expand;
+				//double radiusY = h + 3 * expand;
+				//makeOval(X-(rad/2), Y-(rad/2), rad, rad);
+				makeOval(xc - searchDia / 2 - expand, yc - searchDia / 2 - expand, searchDia + 2 * expand, searchDia + 2 * expand);
+				//makeOval(xc - (radiusX / 2), yc - (radiusY / 2), radiusX, radiusY);
+				//IJ.run(this.image, "Analyze Particles...", "size=" + minSize + "-" + maxSize + " circularity=0.00-1.00 show=Nothing display clear slice");
+				ResultsTable newRT = new ResultsTable();
+				pa = new ParticleAnalyzer(ParticleAnalyzer.SHOW_NONE /*+ ParticleAnalyzer.DISPLAY_SUMMARY*/
+						+ ParticleAnalyzer.CLEAR_WORKSHEET + ParticleAnalyzer.SLICE, ParticleAnalyzer.AREA + ParticleAnalyzer.MIN_MAX
+						+ ParticleAnalyzer.CENTROID + ParticleAnalyzer.CENTER_OF_MASS + ParticleAnalyzer.INTEGRATED_DENSITY
+						+ ParticleAnalyzer.SLICE + ParticleAnalyzer.LIMIT, newRT, minSize, maxSize, 0d, 1d);
+				pa.analyze(this.image);
+				resultsTable = newRT;
+				numResults = resultsTable.size();
+				expand++;
+			}
+			//System.out.println(resultsTable.size());
+			//resultsTable.show("results");
+			if(resultsTable.size() == 1) {
+				xm = resultsTable.getValue("XM", 0);
+				ym = resultsTable.getValue("YM", 0);
+	            area = resultsTable.getValue("Area", 0);
+	            maxInt = resultsTable.getValue("Max", 0);
+	            intDens = resultsTable.getValue("IntDen", 0);
+	            x = resultsTable.getValue("X", 0);
+	            y = resultsTable.getValue("Y", 0);
+	            avg = intDens / area;
+			}
+			//Lost track of neuron. Prompt user to click on neuron again
+			else {
+				System.out.println("lost track of neuron, using head as backup");
+				/*this.currentSlice = this.currentSlice - 1;
+				this.image.setSlice(this.image.getCurrentSlice() - 1);
+                makeRectangle(xc - sqsize / 2, yc - sqsize / 2, sqsize, sqsize);
+                IJ.showMessage("Error", "NeuroTracker has lost track of the neuron. Please manually select the neuron location(s) again.");
+                this.paused = true;
+                this.lostTrack = true;
+                IJ.setThreshold(lowerThreshold, upperThreshold);
+                //IJ.wait(100);
+                IJ.setThreshold(lowerThreshold, 65535);
+                IJ.run(this.image, "Clear Results", "");
+                return null;*/
+				this.processedImage.setSlice(this.image.getCurrentSlice());
+				double[] loc = analyzeSkeleton(this.processedImage, new double[] {xc, yc});
+				System.out.println("found endpoint " + loc[0] + ", " + loc[1]);
+				xc = loc[0];
+				yc = loc[1];
+				searchDia += 12;
+				return this.analyze(xc, yc, searchDia, bgRingDia, minSize, maxSize, searchBoxScale, lowerThreshold, upperThreshold, sqsize, expandAllow, velocityPredict);
+            }
+		}
+		
+		//changed xc, yc to xm, ym
+		makeRectangle(xm - sqsize / 2, ym - sqsize / 2, sqsize, sqsize);
+		IJ.run(this.image, "Clear Results", "");
+		//IJ.setThreshold(lowerThreshold, 65535);
+		IJ.run(this.image, "Set Measurements...", "area min centroid center integrated slice redirect=None decimal=3");
+		//IJ.run(this.image, "Measure","");
+		resultsTable = new ResultsTable();
+		Analyzer a = new Analyzer(this.image, resultsTable);
+		a.measure();
+		
+		//IJ.run("Measure");
+		
+		//resultsTable = Analyzer.getResultsTable();
+		double sqArea = 0;
+		double sqIntDens = 0;
+		if(resultsTable.size() == 1) {
+			sqArea = resultsTable.getValue("Area", 0);
+			sqIntDens = resultsTable.getValue("IntDen", 0);
+		}
+		
+		IJ.run(this.image, "Add Selection...", "stroke=yellow width=1 fill=0");
+		//this.image.setPosition(this.currentSlice); //???
+		
+		/*double offsetx = 0, offsety = 0; //set
+	    offsetx = -1 * (2 * w);
+	    offsety = -1 * (2 * h);*/
+
+	    /*makeOval(xm - 1.2 * w, ym - 1.2 * h, 2.4 * w, 2.4 * h);
+        IJ.setKeyDown(KeyEvent.VK_ALT); //alt key
+        makeOval(xm - 0.7 * w, ym - 0.7 * h, 1.4 * w, 1.4 * h);*/
+        //IJ.setKeyUp(IJ.ALL_KEYS);
+		
+		double BG_RING_OUT = 1.5;
+        makeOval(xc - bgRingDia / 2 * BG_RING_OUT, yc - bgRingDia / 2 * BG_RING_OUT, bgRingDia * BG_RING_OUT, bgRingDia * BG_RING_OUT);
+        IJ.setKeyDown(KeyEvent.VK_ALT);
+        makeOval(xc - bgRingDia / 2, yc - bgRingDia / 2, bgRingDia, bgRingDia);
+		
+		IJ.run("Clear Results", "");
+		IJ.run("Set Measurements...", "area mean min median slice redirect=None decimal=3");
+		resultsTable = new ResultsTable();
+		a = new Analyzer(this.image, resultsTable);
+		a.measure();
+		//IJ.run("Measure");
+		//IJ.run(this.image, "Measure","");
+		
+		double l = this.image.getProcessor().getMinThreshold();
+		
+		//resultsTable = Analyzer.getResultsTable();
+		
+		if(velocityPredict) {
+			double dx = xm - xc;
+			double dy = ym - yc;
+			xm = xm + dx / 2;
+			ym = ym + dy / 2;
+		}
+		
+		NeuronInfo neuronInfo = new NeuronInfo();
+		neuronInfo.lowerThreshold = l;
+		neuronInfo.xc = xm;
+		neuronInfo.yc = ym;
+		neuronInfo.avg = avg;
+		neuronInfo.intDens = intDens;
+		neuronInfo.maxInt = maxInt;
+		neuronInfo.area = area;
+		neuronInfo.x = x;
+		neuronInfo.y = y;
+		neuronInfo.sqArea = sqArea;
+		neuronInfo.sqIntDens = sqIntDens;
+		neuronInfo.redFlag = this.redFlag;
+		if(resultsTable.size() == 1) {
+			neuronInfo.bgAvg = resultsTable.getValue("Mean", 0);
+			neuronInfo.bgMedian = resultsTable.getValue("Median", 0);
+			neuronInfo.intSub = intDens - (area * neuronInfo.bgMedian);
+			neuronInfo.sqIntSub = sqIntDens - (sqArea * neuronInfo.bgMedian);
+		}
+		neuronInfo.bgMedian2 = neuronInfo.bgMedian;
+		//IJ.run("Select None");
+		return neuronInfo;
+	}
+	
 	public NeuronInfo analyze(double xc, double yc, double searchDia, double bgRingDia, double minSize, double maxSize, 
 			double searchBoxScale, double lowerThreshold, double upperThreshold, double sqsize, double expandAllow, boolean velocityPredict) {
 		IJ.run("Set Scale...", "distance=0");
+		
+		//adjust search here
+		//ImagePlus dup = preprocess(this.image);
+		/*this.processedImage.setSlice(this.image.getCurrentSlice());
+		double[] loc = analyzeSkeleton(this.processedImage, new double[] {xc, yc});
+		System.out.println("found endpoint " + loc[0] + ", " + loc[1]);
+		xc = loc[0];
+		yc = loc[1];*/
+		
 		makeOval(xc - searchDia / 2, yc - searchDia / 2, searchDia, searchDia);
 		//makeOval(xc - searchBoxScale * w, yc - searchBoxScale * h, w, h);
 		//IJ.runMacro("makeOval(" + (xc - searchBoxScale * w) + "," +  (yc - searchBoxScale * h) + "," + w + "," + h + ")");
