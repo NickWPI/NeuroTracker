@@ -576,14 +576,14 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
 		IJ.run(dup, "Dilate","stack");
 		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
-		IJ.run(dup, "Dilate","stack");
+		/*IJ.run(dup, "Dilate","stack");
 		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
 		IJ.run(dup, "Dilate","stack");
 		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
 		IJ.run(dup, "Dilate","stack");
 		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
 		IJ.run(dup, "Dilate","stack");
-		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");
+		IJ.run(dup, "Remove Outliers...", "radius=10 threshold=50 which=Bright stack");*/
 		IJ.run(dup, "Skeletonize", "stack");
 		return dup;
 	}
@@ -624,7 +624,6 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		for(double[] p : possiblePoints) {
 			double dist = Math.sqrt(Math.pow(Math.abs(prevPoint[0] - p[0]), 2) + Math.pow(Math.abs(prevPoint[1] - p[1]), 2));
 			if(/*dist < 20 && */dist < minDist) {
-				System.out.println("used");
 				closest = p;
 				minDist = dist;
 			}
@@ -632,8 +631,6 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		if(minDist == Double.MAX_VALUE) {
 			return prevPoint;
 		}
-		//closest[0] *= 2;
-		//closest[1] *= 2;
 		return closest;
 	}
 	
@@ -837,7 +834,8 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 	}
 	
 	public NeuronInfo analyze(double xc, double yc, double searchDia, double bgRingDia, double minSize, double maxSize, 
-			double searchBoxScale, double lowerThreshold, double upperThreshold, double sqsize, double expandAllow, boolean velocityPredict) {
+			double searchBoxScale, double lowerThreshold, double upperThreshold, double sqsize, double expandAllow, 
+			boolean velocityPredict/*, boolean analyzeSkeletonBackup*/) {
 		IJ.run("Set Scale...", "distance=0");
 		
 		//adjust search here
