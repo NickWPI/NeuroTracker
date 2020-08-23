@@ -19,7 +19,7 @@
 	<name>Process Pixels</name>
 	<description>A Maven project implementing an ImageJ 1.x plugin.</description>
 	<url>http://mycompany.com/imagej/process-pixels/</url>
-	<inceptionYear>2012</inceptionYear>
+	<inceptionYear>2020</inceptionYear>
 	<organization>
 		<name>My Company</name>
 		<url>http://mycompany.com/</url>
@@ -33,9 +33,9 @@
 
 	<developers>
 		<developer>
-			<id>ctrueden</id>
-			<name>Curtis Rueden</name>
-			<url>https://imagej.net/User:Rueden</url>
+			<id>nwcheng</id>
+			<name>Nicholas Cheng</name>
+			<url>https://github.com/NickWPI</url>
 			<roles>
 				<role>lead</role>
 				<role>developer</role>
@@ -48,33 +48,9 @@
 	</developers>
 	<contributors>
 		<contributor>
-			<name>Johannes Schindelin</name>
-			<url>https://imagej.net/User:Schindelin</url>
-			<roles><role>founder</role></roles>
-			<properties><id>dscho</id></properties>
-		</contributor>
-		<contributor>
-			<name>Olivier Burri</name>
-			<url>https://imagej.net/User:Oburri</url>
-			<properties><id>lacan</id></properties>
-		</contributor>
-		<contributor>
-			<name>Mark Hiner</name>
-			<url>https://imagej.net/User:Hinerm</url>
-			<properties><id>hinerm</id></properties>
-		</contributor>
-		<contributor>
-			<name>Jules Maselbas</name>
-		</contributor>
-		<contributor>
-			<name>Kota Miura</name>
-			<url>https://imagej.net/User:Miura</url>
-			<properties><id>miura</id></properties>
-		</contributor>
-		<contributor>
-			<name>Yili Zhao</name>
-			<url>https://imagej.net/User:Panovr</url>
-			<properties><id>panovr</id></properties>
+			<name>Nicholas Cheng</name>
+			<url>https://github.com/NickWPI</url>
+			<properties><id>nwcheng</id></properties>
 		</contributor>
 	</contributors>
 
