@@ -166,8 +166,10 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
     	dialog.addStringField("Min Size", "2");
     	dialog.addStringField("Expand Allow", "10");
     	dialog.addStringField("Threshold", "1200");
+    	dialog.addStringField("Skeletonization Threshold", "100");
     	dialog.addCheckbox("Use Tracking", true);
     	dialog.addCheckbox("Velocity Predict", false);
+    	dialog.addCheckbox("Use Skeletonization", true);
     	FileDialog fileDialog = new FileDialog(dialog, "Select file");
     	//fileDialog.setFile("*.txt");
     	Button browseButton = new Button("Browse");
@@ -221,7 +223,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		buttons.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
 		GridBagConstraints pc = new GridBagConstraints();
 		pc.gridx = 0; //1
-		pc.gridy = 9;
+		pc.gridy = 11;
 		pc.anchor = GridBagConstraints.CENTER; //west
 		pc.gridwidth = 2;
 		pc.insets = new Insets(15, 0, 0, 0);
@@ -235,6 +237,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
     	Vector<Checkbox> checkBoxes = dialog.getCheckboxes();
     	//int lowerThreshold = sliders.get(0).getValue();
     	int lowerThreshold = Integer.parseInt(fields.get(6).getText().toString());
+    	int skeletonizationThreshold = Integer.parseInt(fields.get(6).getText().toString());
     	int searchDia = Integer.parseInt(fields.get(0).getText().toString());
     	int bgRingDia = Integer.parseInt(fields.get(1).getText().toString());
     	int sqSize = Integer.parseInt(fields.get(2).getText().toString());
@@ -243,6 +246,7 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
     	int expandAllow = Integer.parseInt(fields.get(5).getText().toString());
     	boolean useTracking = checkBoxes.get(0).getState();
     	boolean velocityPredict = checkBoxes.get(1).getState();
+    	boolean useSkeletonization = checkBoxes.get(2).getState();
 		this.settings.put("animal", 0);
 		this.settings.put("lowerThreshold", lowerThreshold);
 		this.settings.put("upperThreshold", 65535);
@@ -254,6 +258,8 @@ public class NeuroTracker implements PlugIn, MouseListener, KeyListener {
 		this.settings.put("expandAllow", expandAllow);
 		this.settings.put("usetracking", useTracking ? 1 : 0);
 		this.settings.put("velocityPredict", velocityPredict ? 1 : 0);
+		this.settings.put("skeletonizationThreshold", skeletonizationThreshold);
+		this.settings.put("useSkeletonization", useSkeletonization ? 1 : 0);
     }
 	
 	public void loadFolder() {
