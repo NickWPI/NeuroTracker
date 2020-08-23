@@ -17,7 +17,7 @@
 	<version>0.1.0-SNAPSHOT</version>
 
 	<name>Process Pixels</name>
-	<description>A Maven project implementing an ImageJ 1.x plugin.</description>
+	<description>Plugin for ImageJ that tracks florescent neurons in worms</description>
 	<url>http://mycompany.com/imagej/process-pixels/</url>
 	<inceptionYear>2020</inceptionYear>
 	<organization>
@@ -62,14 +62,14 @@
 	</mailingLists>
 
 	<scm>
-		<connection>scm:git:git://github.com/imagej/example-legacy-plugin</connection>
-		<developerConnection>scm:git:git@github.com:imagej/example-legacy-plugin</developerConnection>
+		<connection>scm:git:git:github.com/NickWPI/NeuroTracker</connection>
+		<developerConnection>scm:git:git@github.com:NickWPI/NeuroTracker</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/imagej/example-legacy-plugin</url>
+		<url>https://github.com/NickWPI/NeuroTracker</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>https://github.com/imagej/example-legacy-plugin/issues</url>
+		<url>https://github.com/NickWPI/NeuroTracker/issues</url>
 	</issueManagement>
 	<ciManagement>
 		<system>None</system>
